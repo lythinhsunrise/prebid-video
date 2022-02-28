@@ -6,16 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prebid PlayerJS Demo</title>
-    <!-- <script async src="//cdn.jsdelivr.net/npm/prebid.js@latest/dist/not-for-prod/prebid.js"></script> -->
     <script src="./prebid6.13.0.js"></script>
-    <!-- use recent version of videojs to ensure proper functioning with the iOS devices -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/6.4.0/video-js.css">
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/video.js/6.4.0/video.js"></script>
-    <!-- videojs-vast-vpaid -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-vast-vpaid/2.0.2/videojs.vast.vpaid.min.css"
-        rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-vast-vpaid/2.0.2/videojs_5.vast.vpaid.min.js"></script>
-
+    <script src="//imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+    <script src="assets/js/videojs.ima.js"></script>
+    <link rel="stylesheet" href="assets/css/videojs.ima.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs-contrib-ads.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/6.9.0/videojs-contrib-ads.css">
     <script>
         var pbjs = pbjs || {};
         pbjs.que = pbjs.que || [];
@@ -52,17 +50,17 @@
                 }
             });
 
-            pbjs.requestBids({
-                bidsBackHandler: function (bids) {
-                    var videoUrl = pbjs.adServers.dfp.buildVideoUrl({
-                        adUnit: videoAdUnit,
-                        params: {
-                            iu: '/19968336/prebid_cache_video_adunit',
-                        }
-                    });
-                    invokeVideoPlayer(videoUrl);
-                }
-            });
+            // pbjs.requestBids({
+            //     bidsBackHandler: function (bids) {
+            //         var videoUrl = pbjs.adServers.dfp.buildVideoUrl({
+            //             adUnit: videoAdUnit,
+            //             params: {
+            //                 iu: '/19968336/prebid_cache_video_adunit',
+            //             }
+            //         });
+            //         invokeVideoPlayer(videoUrl);
+            //     }
+            // });
         });
 
     </script>
@@ -77,23 +75,47 @@
             <source src="https://vjs.zencdn.net/v/oceans.ogv" type='video/ogg' />
         </video>
     </div>
-
-
     <script>
-        function invokeVideoPlayer(url) {
-          videojs("vid1").ready(function() {
-            this.vastClient({
-              adTagUrl: url,
-              playAdAlways: true,
-              verbosity: 0,
-              vpaidFlashLoaderPath: "https://github.com/MailOnline/videojs-vast-vpaid/blob/RELEASE/bin/VPAIDFlash.swf?raw=true",
-              autoplay: true
-            });
-            this.muted(true);
-            this.play();
-          });
+        var videoOptions = {
+            controls: true,
+            width: 640,
+            height: 320,
         }
-      </script>
+        var player = videojs('vid1', videoOptions)
+        var options = {
+            adTagUrl: "//pubads.g.doubleclick.net/gampad/ads?sz=640x360&iu=/6062/iab_vast_samples/skippable&ciu_szs=300x250,728x90&impl=s&gdfp_req=1&env=vp&output=xml_vast2&unviewed_position_start=1",
+        };
+        player.ima(options);
+        player.muted(true);
+        player.play();
+
+        var adssecond = 0;
+
+        player.on('timeupdate', function () {
+            var currentTime = player.currentTime()
+            console.log(currentTime)
+            if(Math.round(currentTime) !== adssecond && Math.round(currentTime) !== 0 && Math.round(currentTime) % 10 === 0) {
+                adssecond = Math.round(currentTime)
+                pbjs.requestBids({
+                    bidsBackHandler: function (bids) {
+                        var videoUrl = pbjs.adServers.dfp.buildVideoUrl({
+                            adUnit: videoAdUnit,
+                            params: {
+                                iu: '/19968336/prebid_cache_video_adunit',
+                            }
+                        });
+                        invokeVideoPlayer(videoUrl);
+                    }
+                });
+            }
+        })
+
+        function invokeVideoPlayer(url) {
+            player.ima.changeAdTag(url)
+            player.ima.requestAds()
+            console.log('requestAds')
+        }
+    </script>
 </body>
 
 </html>
